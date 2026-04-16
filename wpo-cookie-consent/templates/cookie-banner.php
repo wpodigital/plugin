@@ -22,9 +22,9 @@ $color_secondary= get_option( 'wpo_cc_color_secondary',    '#3ba1c0' );
 $color_text     = get_option( 'wpo_cc_color_text_on_primary', '#ffffff' );
 
 // Sanitize colors.
-$color_primary   = preg_match( '/^#[0-9a-fA-F]{3,6}$/', $color_primary )   ? $color_primary   : '#105b8c';
-$color_secondary = preg_match( '/^#[0-9a-fA-F]{3,6}$/', $color_secondary ) ? $color_secondary : '#3ba1c0';
-$color_text      = preg_match( '/^#[0-9a-fA-F]{3,6}$/', $color_text )      ? $color_text      : '#ffffff';
+$color_primary   = preg_match( '/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/', $color_primary )   ? $color_primary   : '#105b8c';
+$color_secondary = preg_match( '/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/', $color_secondary ) ? $color_secondary : '#3ba1c0';
+$color_text      = preg_match( '/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/', $color_text )      ? $color_text      : '#ffffff';
 ?>
 
 <!-- WPO Cookie Consent Banner -->

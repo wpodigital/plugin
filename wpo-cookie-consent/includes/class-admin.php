@@ -27,6 +27,8 @@ class WPO_Cookie_Admin {
 	}
 
 	public function register_settings() {
+		$textarea_keys = array( 'wpo_cc_banner_description' );
+
 		$fields = array(
 			'wpo_cc_gtm_id'               => array( 'label' => __( 'Google Tag Manager ID', 'wpo-cookie-consent' ),         'default' => 'GTM-XXXXXXX' ),
 			'wpo_cc_cookie_policy_url'     => array( 'label' => __( 'URL Política de Cookies', 'wpo-cookie-consent' ),       'default' => '/politica-de-cookies/' ),
@@ -42,11 +44,17 @@ class WPO_Cookie_Admin {
 			'wpo_cc_color_text_on_primary' => array( 'label' => __( 'Color texto sobre primario', 'wpo-cookie-consent' ),    'default' => '#ffffff' ),
 		);
 
-		register_setting( self::OPTION_GROUP, 'wpo_cc_settings', array( 'sanitize_callback' => array( $this, 'sanitize_settings' ) ) );
-
 		add_settings_section( 'wpo_cc_main', '', '__return_null', 'wpo-cookie-consent' );
 
 		foreach ( $fields as $key => $data ) {
+			if ( strpos( $key, 'color' ) !== false ) {
+				$field_type = 'color';
+			} elseif ( in_array( $key, $textarea_keys, true ) ) {
+				$field_type = 'textarea';
+			} else {
+				$field_type = 'text';
+			}
+
 			register_setting( self::OPTION_GROUP, $key, array( 'sanitize_callback' => 'sanitize_text_field' ) );
 			add_settings_field(
 				$key,
@@ -57,7 +65,7 @@ class WPO_Cookie_Admin {
 				array(
 					'key'     => $key,
 					'default' => $data['default'],
-					'type'    => ( strpos( $key, 'color' ) !== false ) ? 'color' : 'text',
+					'type'    => $field_type,
 				)
 			);
 		}
@@ -76,7 +84,7 @@ class WPO_Cookie_Admin {
 				esc_attr( $key ),
 				esc_attr( $value )
 			);
-		} elseif ( strlen( $default ) > 60 ) {
+		} elseif ( 'textarea' === $type ) {
 			printf(
 				'<textarea name="%s" id="%s" rows="3" class="large-text">%s</textarea>',
 				esc_attr( $key ),
@@ -120,7 +128,4 @@ class WPO_Cookie_Admin {
 		<?php
 	}
 
-	public function sanitize_settings( $input ) {
-		return $input;
-	}
 }

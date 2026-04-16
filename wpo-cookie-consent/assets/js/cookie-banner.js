@@ -49,8 +49,14 @@
 	/*  Cookie helpers                                                     */
 	/* ------------------------------------------------------------------ */
 	function readCookie( name ) {
-		var match = document.cookie.match( new RegExp( '(?:^|;\\s*)' + name.replace( /[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&' ) + '=([^;]*)' ) );
-		return match ? decodeURIComponent( match[1] ) : null;
+		var cookies = document.cookie.split( ';' );
+		for ( var i = 0; i < cookies.length; i++ ) {
+			var parts = cookies[ i ].trim().split( '=' );
+			if ( parts[ 0 ] === name ) {
+				return decodeURIComponent( parts.slice( 1 ).join( '=' ) );
+			}
+		}
+		return null;
 	}
 
 	function writeCookie( name, value, days ) {
@@ -108,7 +114,7 @@
 		// 2. Write JS-accessible cookie.
 		var payload = JSON.stringify( Object.assign( {}, choices, {
 			timestamp: Math.floor( Date.now() / 1000 ),
-			version:   '1.0.0'
+			version:   cfg.version || '1.0.0'
 		} ) );
 		writeCookie( cfg.cookieName || 'wpo_cookie_consent', payload, cfg.cookieDays || 365 );
 

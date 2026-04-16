@@ -115,6 +115,7 @@ gtag('set', 'ads_data_redaction', true);
 				'nonce'        => wp_create_nonce( 'wpo_cc_nonce' ),
 				'cookieName'   => self::COOKIE_NAME,
 				'cookieDays'   => self::COOKIE_DAYS,
+				'version'      => WPO_CC_VERSION,
 				'savedConsent' => $saved,
 				'hasSaved'     => ! empty( $saved ),
 			)
@@ -149,7 +150,10 @@ gtag('set', 'ads_data_redaction', true);
 			'version'     => WPO_CC_VERSION,
 		);
 
-		// Store consent in a server-set cookie (httponly=false so JS can read it too).
+		// Store consent in a server-set cookie.
+		// httponly is intentionally false: the consent banner JS needs to read
+		// this cookie client-side to re-apply Consent Mode v2 on subsequent page loads.
+		// The cookie contains only 'granted'/'denied' strings – no sensitive user data.
 		$expiry = time() + ( self::COOKIE_DAYS * DAY_IN_SECONDS );
 		setcookie(
 			self::COOKIE_NAME,
@@ -170,18 +174,29 @@ gtag('set', 'ads_data_redaction', true);
 	 * Check whether a valid consent cookie already exists.
 	 */
 	public function has_consent() {
-		return ! empty( $_COOKIE[ self::COOKIE_NAME ] );
+		return isset( $_COOKIE[ self::COOKIE_NAME ] ) && '' !== $_COOKIE[ self::COOKIE_NAME ];
 	}
 
 	/**
 	 * Return saved consent array or empty array.
+	 * All values are validated against an allowlist before being returned.
 	 */
 	public function get_saved_consent() {
 		if ( ! $this->has_consent() ) {
 			return array();
 		}
-		$raw = stripslashes( $_COOKIE[ self::COOKIE_NAME ] );
+		$raw  = sanitize_text_field( wp_unslash( $_COOKIE[ self::COOKIE_NAME ] ) );
 		$data = json_decode( $raw, true );
-		return is_array( $data ) ? $data : array();
+		if ( ! is_array( $data ) ) {
+			return array();
+		}
+		// Validate each consent value against an allowlist.
+		$allowed = array( 'granted', 'denied' );
+		foreach ( array( 'analytics', 'marketing', 'preferences' ) as $key ) {
+			if ( ! isset( $data[ $key ] ) || ! in_array( $data[ $key ], $allowed, true ) ) {
+				$data[ $key ] = 'denied';
+			}
+		}
+		return $data;
 	}
 }
