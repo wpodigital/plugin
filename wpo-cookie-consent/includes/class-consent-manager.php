@@ -36,6 +36,12 @@ class WPO_Consent_Manager {
 	 */
 	public function inject_consent_defaults() {
 		$gtm_id = get_option( 'wpo_cc_gtm_id', '' );
+
+		// Read any previously saved consent from the server-side cookie so we can
+		// emit a consent 'update' inline – before GTM loads – for returning visitors.
+		// This avoids the race condition where GTM fires tags before the footer JS
+		// has had a chance to call gtag('consent','update',...).
+		$saved = $this->get_saved_consent();
 		?>
 <script data-wpo-cc="ignore">
 /* WPO Cookie Consent – Google Consent Mode v2 defaults */
@@ -49,9 +55,25 @@ gtag('consent', 'default', {
 	functionality_storage:   'denied',
 	personalization_storage: 'denied',
 	security_storage:        'granted',
-	wait_for_update:         500
+	wait_for_update:         2000  /* 2 s – gives footer JS enough time on slow connections; overridden immediately above for returning visitors */
 });
 gtag('set', 'ads_data_redaction', true);
+<?php if ( ! empty( $saved ) ) :
+	$analytics   = ( isset( $saved['analytics'] )   && 'granted' === $saved['analytics'] )   ? 'granted' : 'denied';
+	$marketing   = ( isset( $saved['marketing'] )   && 'granted' === $saved['marketing'] )   ? 'granted' : 'denied';
+	$preferences = ( isset( $saved['preferences'] ) && 'granted' === $saved['preferences'] ) ? 'granted' : 'denied';
+?>
+/* Returning visitor – apply saved consent immediately, before GTM fires tags. */
+gtag('consent', 'update', {
+	analytics_storage:       '<?php echo esc_js( $analytics ); ?>',
+	ad_storage:              '<?php echo esc_js( $marketing ); ?>',
+	ad_user_data:            '<?php echo esc_js( $marketing ); ?>',
+	ad_personalization:      '<?php echo esc_js( $marketing ); ?>',
+	functionality_storage:   '<?php echo esc_js( $preferences ); ?>',
+	personalization_storage: '<?php echo esc_js( $preferences ); ?>',
+	security_storage:        'granted'
+});
+<?php endif; ?>
 <?php if ( $gtm_id ) : ?>
 (function(w,d,s,l,i){
 	w[l]=w[l]||[];
